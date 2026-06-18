@@ -1,0 +1,6 @@
+INSERT INTO `location`(`location_id`, `factory`, `building`, `floor`) VALUES 
+('A011','Nhà máy 1','Xưởng 1','Tầng 1'),
+('A012','Nhà máy 1','Xưởng 1','Tầng 2'),
+('A021','Nhà máy 1','Xưởng 2','Tầng 1'),
+('A022','Nhà máy 1','Xưởng 2','Tầng 2'),
+('A032','Nhà máy 1','Xưởng 3','Tầng 2');
