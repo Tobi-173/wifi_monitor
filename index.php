@@ -2,14 +2,14 @@
 session_start();
 include 'includes/config.php';
 
-// Kiểm tra đăng nhập
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+    header('Location: login.php');
     exit;
 }
 
 $user_id = $_SESSION['user_id'];
 $user_role = $_SESSION['role'];
+$user_fullname = $_SESSION['full_name'];
 
 // Lấy location_id được chọn (mặc định tầng đầu tiên nếu không có)
 $selected_location = '';
@@ -18,19 +18,23 @@ if ($conn) {
         $selected_location = mysqli_real_escape_string($conn, $_GET['location_id']);
     }
 
-    // Nếu chưa chọn hoặc kiểm tra quyền truy cập của user đối với location đã chọn
-    $auth_query = ($user_role === 'admin') 
-        ? "SELECT location_id FROM location"
-        : "SELECT l.location_id FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id'";
-    
     if ($selected_location != '') {
-        $check_access = mysqli_query($conn, "$auth_query AND l.location_id = '$selected_location'");
-        if (mysqli_num_rows($check_access) == 0) $selected_location = ''; // Reset nếu không có quyền
+        if ($user_role === 'admin') {
+            $check_access = mysqli_query($conn, "SELECT location_id FROM location WHERE location_id = '$selected_location'");
+        } else {
+            $check_access = mysqli_query($conn, "SELECT l.location_id FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' AND l.location_id = '$selected_location'");
+        }
+        if (mysqli_num_rows($check_access) == 0) {
+            $selected_location = ''; // Reset nếu vị trí không hợp lệ hoặc không được cấp quyền
+        }
     }
 
     if ($selected_location == '') {
-        // Lấy vị trí đầu tiên mà user được phép xem
-        $res = mysqli_query($conn, "$auth_query ORDER BY id ASC LIMIT 1");
+        if ($user_role === 'admin') {
+            $res = mysqli_query($conn, "SELECT location_id FROM location ORDER BY location_id ASC LIMIT 1");
+        } else {
+            $res = mysqli_query($conn, "SELECT l.location_id FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY l.location_id ASC LIMIT 1");
+        }
         if ($row = mysqli_fetch_assoc($res)) {
             $selected_location = $row['location_id'];
         }
@@ -68,18 +72,25 @@ if ($conn && $selected_location != '') {
 // Hàm lấy danh sách hierarchy cho Sidebar
 $hierarchy = [];
 if ($conn) {
-    // Lọc danh sách Sidebar theo quyền
-    $side_query = ($user_role === 'admin')
-        ? "SELECT * FROM location ORDER BY factory, building, floor"
-        : "SELECT l.* FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY factory, building, floor";
-    
+    if ($user_role === 'admin') {
+        $side_query = "SELECT * FROM location ORDER BY factory, building, floor";
+    } else {
+        $side_query = "SELECT l.* FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY factory, building, floor";
+    }
     $res = mysqli_query($conn, $side_query);
     while ($row = mysqli_fetch_assoc($res)) {
         $hierarchy[$row['factory']][$row['building']][] = $row;
     }
 }
 
-function renderSidebar($hierarchy, $selected_id) {
+/**
+ * Render the sidebar menu from the hierarchy data.
+ *
+ * @param array $hierarchy Nested array of factories, buildings, and floors.
+ * @param string $selected_id Currently selected location id.
+ * @return string HTML markup for the sidebar.
+ */
+function renderSidebar(array $hierarchy, string $selected_id) {
     $html = '<ul class="list-unstyled components" id="sidebarMenu">';
     foreach ($hierarchy as $factory => $buildings) {
         // Kiểm tra xem Factory này có chứa Tầng đang được chọn hay không để tự động mở rộng
@@ -157,7 +168,7 @@ function renderSidebar($hierarchy, $selected_id) {
                     <i class="ph ph-list"></i>
                 </button>
                 <div class="user-info">
-                    <span class="me-3"><i class="ph ph-user"></i> <?php echo $_SESSION['full_name']; ?> (<?php echo $_SESSION['role']; ?>)</span>
+                    <span class="me-3"><i class="ph ph-user"></i> <?php echo htmlspecialchars($user_fullname); ?> (<?php echo htmlspecialchars($user_role); ?>)</span>
                     <span class="breadcrumb-text"><?php echo $current_location_breadcrumb; ?></span>
                     <a href="logout.php" class="ms-3 text-danger"><i class="ph ph-sign-out"></i> Thoát</a>
                 </div>
@@ -166,7 +177,7 @@ function renderSidebar($hierarchy, $selected_id) {
             <main class="container-fluid">
                 <div class="dashboard-header">
                     <h2 style="padding: 20px 20px 0 20px;">Sơ đồ WiFi: <?php echo $current_location_breadcrumb; ?></h2>
-                    <?php if ($user_role === 'admin' || $user_role === 'operator'): // Có thể tùy chỉnh thêm quyền ở đây ?>
+                    <?php if ($user_role === 'admin' || $user_role === 'manager'): ?>
                         <div class="grid-controls" style="padding: 10px 20px;">
                             <button id="btnToggleAddMode" class="btn-action primary"><i class="ph ph-plus-circle"></i> Thêm WiFi</button>
                             <span id="addModeStatus" class="status-badge" style="display:none;">Chế độ thêm: Đang bật (Click vào ô để đặt WiFi)</span>

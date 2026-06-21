@@ -5,11 +5,12 @@
 -- Bảng lưu trữ phân cấp: Nhà máy (Factory) > Tòa nhà (Building) > Tầng (Floor)
 CREATE TABLE IF NOT EXISTS `location` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `location_id` varchar(4) NOT NULL,
+  `location_id` varchar(10) NOT NULL,
   `factory` varchar(100) NOT NULL,
   `building` varchar(100) NOT NULL,
   `floor` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_location_id` (`location_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Bảng `wifi_data` sẽ lưu trữ thông tin tốc độ WiFi tại mỗi ô lưới theo thời gian.
@@ -27,9 +28,10 @@ CREATE TABLE IF NOT EXISTS `wifi_data` (
 -- Dữ liệu mẫu cho phân cấp
 --
 INSERT INTO `location` (`location_id`, `factory`, `building`, `floor`) VALUES
-('A011', 'Nhà máy Samsung SEV', 'Tòa nhà Production A', 'Tầng 1 - Lắp ráp'),
-('A012', 'Nhà máy Samsung SEV', 'Tòa nhà Production A', 'Tầng 2 - Đóng gói'),
-('B011', 'Nhà máy Samsung SEV', 'Tòa nhà Production B', 'Tầng 1 - Kho');
+('A011', 'Nhà máy 1', 'Xưởng 1', 'Tầng 1'),
+('A012', 'Nhà máy 1', 'Xưởng 1', 'Tầng 2'),
+('A021', 'Nhà máy 1', 'Xưởng 2', 'Tầng 1'),
+('A022', 'Nhà máy 1', 'Xưởng 2', 'Tầng 2');
 
 --
 -- Chèn mẫu dữ liệu WiFi cho Tầng 1 (location_id = 3)
@@ -64,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `username` VARCHAR(50) NOT NULL UNIQUE,
     `password` VARCHAR(255) NOT NULL,
     `full_name` VARCHAR(100),
-    `role` ENUM('admin', 'operator') DEFAULT 'operator',
+    `role` ENUM('admin', 'manager', 'staff') DEFAULT 'staff',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -76,11 +78,18 @@ CREATE TABLE IF NOT EXISTS `user_locations` (
     FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Chèn dữ liệu mẫu (Mật khẩu mặc định là '123456' đã hash)
--- Admin: xem tất cả
+-- Chèn dữ liệu mẫu (Mật khẩu mặc định là 'password' đã hash)
 INSERT INTO `users` (`username`, `password`, `full_name`, `role`) VALUES 
 ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Quản trị viên', 'admin'),
-('user1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nhân viên Tầng 1', 'operator');
+('manager1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Quản lý Xưởng 1', 'manager'),
+('manager2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Quản lý Xưởng 2', 'manager'),
+('staff1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nhân viên Tầng 1', 'staff'),
+('staff2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nhân viên Tầng 2', 'staff');
 
--- Cấp quyền cho user1 chỉ được xem Tầng 1 (A011)
-INSERT INTO `user_locations` (`user_id`, `location_id`) VALUES (2, 'A011');
+-- Cấp quyền cho manager và staff theo từng location
+INSERT INTO `user_locations` (`user_id`, `location_id`) VALUES
+(2, 'A011'),
+(2, 'A012'),
+(3, 'A021'),
+(4, 'A011'),
+(5, 'A012');

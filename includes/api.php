@@ -1,21 +1,34 @@
 <?php
+session_start();
 include 'config.php';
+
+if (!isset($_SESSION['user_id'])) {
+    echo json_encode(['status' => 'error', 'message' => 'Chưa đăng nhập.']);
+    exit;
+}
+
+$user_id = $_SESSION['user_id'];
+$user_role = $_SESSION['role'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = isset($_POST['action']) ? $_POST['action'] : 'save_reading';
     $location_id = mysqli_real_escape_string($conn, $_POST['location_id']);
 
     if ($action === 'save_aps') {
+        if ($user_role !== 'admin' && $user_role !== 'manager') {
+            echo json_encode(['status' => 'error', 'message' => 'Không có quyền cập nhật vị trí WiFi.']);
+            exit;
+        }
+
         $cell_ids = json_decode($_POST['cell_ids'], true);
-        
+
         if (empty($location_id)) {
             echo json_encode(['status' => 'error', 'message' => 'Không xác định được vị trí (Location ID)']);
             exit;
         }
 
-        // Xóa các vị trí cũ của location này
         mysqli_query($conn, "DELETE FROM wifi_aps WHERE location_id = '$location_id'");
-        
+
         if (!empty($cell_ids)) {
             $values = [];
             foreach ($cell_ids as $cid) {
@@ -31,6 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             echo json_encode(['status' => 'success', 'message' => 'Đã xóa tất cả WiFi']);
         }
+        exit;
+    }
+
+    if ($user_role !== 'admin' && $user_role !== 'manager') {
+        echo json_encode(['status' => 'error', 'message' => 'Không có quyền lưu dữ liệu WiFi.']);
         exit;
     }
 
