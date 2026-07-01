@@ -51,6 +51,8 @@ Trang dashboard bao gồm các thành phần chính sau:
   - Kích thước mặc định: 13 x 4 ô
   - Responsive (tự co giãn theo màn hình)
 
+### [mới] 2.4 Trên Sidebar thêm một mục Quản trị tài khoản nhằm mục địch tạo tài khoản user và phân quyền cho user.
+
 - Mỗi ô đại diện cho một vị trí đo tín hiệu WiFi
 ### 2.3 Thêm Copyright by Nguyễn Mạnh
 
@@ -85,7 +87,6 @@ Khi người dùng click vào một ô trong layout:
 - Hỗ trợ tối ưu vị trí đặt thiết bị mạng
 - Phục vụ hệ thống IoT sản xuất hoạt động ổn định
 
----
 
 ## 5. Gợi ý mở rộng (tương lai)
 

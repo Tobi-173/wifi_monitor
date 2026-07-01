@@ -22,7 +22,7 @@ if ($conn) {
         if ($user_role === 'admin') {
             $check_access = mysqli_query($conn, "SELECT location_id FROM location WHERE location_id = '$selected_location'");
         } else {
-            $check_access = mysqli_query($conn, "SELECT l.location_id FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' AND l.location_id = '$selected_location'");
+            $check_access = mysqli_query($conn, "SELECT l.location_id FROM location l INNER JOIN user_location ul ON l.id = ul.location_id WHERE ul.user_id = '$user_id' AND l.location_id = '$selected_location'");
         }
         if (mysqli_num_rows($check_access) == 0) {
             $selected_location = ''; // Reset nếu vị trí không hợp lệ hoặc không được cấp quyền
@@ -33,7 +33,7 @@ if ($conn) {
         if ($user_role === 'admin') {
             $res = mysqli_query($conn, "SELECT location_id FROM location ORDER BY location_id ASC LIMIT 1");
         } else {
-            $res = mysqli_query($conn, "SELECT l.location_id FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY l.location_id ASC LIMIT 1");
+            $res = mysqli_query($conn, "SELECT l.location_id FROM location l INNER JOIN user_location ul ON l.id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY l.location_id ASC LIMIT 1");
         }
         if ($row = mysqli_fetch_assoc($res)) {
             $selected_location = $row['location_id'];
@@ -75,7 +75,7 @@ if ($conn) {
     if ($user_role === 'admin') {
         $side_query = "SELECT * FROM location ORDER BY factory, building, floor";
     } else {
-        $side_query = "SELECT l.* FROM location l INNER JOIN user_locations ul ON l.location_id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY factory, building, floor";
+        $side_query = "SELECT l.* FROM location l INNER JOIN user_location ul ON l.id = ul.location_id WHERE ul.user_id = '$user_id' ORDER BY l.factory, l.building, l.floor";
     }
     $res = mysqli_query($conn, $side_query);
     while ($row = mysqli_fetch_assoc($res)) {
@@ -158,6 +158,11 @@ function renderSidebar(array $hierarchy, string $selected_id) {
             <div class="sidebar-header">
                 <h3><i class="ph ph-broadcast"></i> WiFi Monitor</h3>
             </div>
+            <?php if ($user_role === 'admin'): ?>
+                <div class="sidebar-section">
+                    <a href="accounts.php" class="sidebar-admin-link"><i class="ph ph-user-gear"></i> Quản trị tài khoản</a>
+                </div>
+            <?php endif; ?>
             <?php echo renderSidebar($hierarchy, $selected_location); ?>
         </nav>
 
@@ -177,7 +182,7 @@ function renderSidebar(array $hierarchy, string $selected_id) {
             <main class="container-fluid">
                 <div class="dashboard-header">
                     <h2 style="padding: 20px 20px 0 20px;">Sơ đồ WiFi: <?php echo $current_location_breadcrumb; ?></h2>
-                    <?php if ($user_role === 'admin' || $user_role === 'manager'): ?>
+                    <?php if ($user_role === 'admin'): ?>
                         <div class="grid-controls" style="padding: 10px 20px;">
                             <button id="btnToggleAddMode" class="btn-action primary"><i class="ph ph-plus-circle"></i> Thêm WiFi</button>
                             <span id="addModeStatus" class="status-badge" style="display:none;">Chế độ thêm: Đang bật (Click vào ô để đặt WiFi)</span>

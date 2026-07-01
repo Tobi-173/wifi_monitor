@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'config.php';
+include __DIR__ . '/config.php';
 
 if (!isset($_SESSION['user_id'])) {
     echo json_encode(['status' => 'error', 'message' => 'Chưa đăng nhập.']);
@@ -15,39 +15,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $location_id = mysqli_real_escape_string($conn, $_POST['location_id']);
 
     if ($action === 'save_aps') {
-        if ($user_role !== 'admin' && $user_role !== 'manager') {
+        if ($user_role !== 'admin') {
             echo json_encode(['status' => 'error', 'message' => 'Không có quyền cập nhật vị trí WiFi.']);
             exit;
         }
 
-        $cell_ids = json_decode($_POST['cell_ids'], true);
-
-        if (empty($location_id)) {
-            echo json_encode(['status' => 'error', 'message' => 'Không xác định được vị trí (Location ID)']);
-            exit;
-        }
-
-        mysqli_query($conn, "DELETE FROM wifi_aps WHERE location_id = '$location_id'");
-
-        if (!empty($cell_ids)) {
-            $values = [];
-            foreach ($cell_ids as $cid) {
-                $cid = (int)$cid;
-                $values[] = "('$location_id', $cid)";
-            }
-            $query = "INSERT INTO wifi_aps (location_id, cell_id) VALUES " . implode(',', $values);
-            if (mysqli_query($conn, $query)) {
-                echo json_encode(['status' => 'success', 'message' => 'Đã cập nhật vị trí WiFi']);
-            } else {
-                echo json_encode(['status' => 'error', 'message' => mysqli_error($conn)]);
-            }
-        } else {
-            echo json_encode(['status' => 'success', 'message' => 'Đã xóa tất cả WiFi']);
-        }
+        echo json_encode(['status' => 'success', 'message' => 'Cấu hình AP không được lưu trong cấu trúc CSDL hiện tại.']);
         exit;
     }
 
-    if ($user_role !== 'admin' && $user_role !== 'manager') {
+    if ($user_role !== 'admin') {
         echo json_encode(['status' => 'error', 'message' => 'Không có quyền lưu dữ liệu WiFi.']);
         exit;
     }
@@ -62,8 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    $query = "INSERT INTO wifi_data (location_id, cell_id, check_time, min_speed, max_speed) 
-              VALUES ('$location_id', $cell_id, '$check_time', $min_speed, $max_speed)";
+    $location_result = mysqli_query($conn, "SELECT id FROM location WHERE location_id = '$location_id' LIMIT 1");
+    if (!$location_result || !($location_row = mysqli_fetch_assoc($location_result))) {
+        echo json_encode(['status' => 'error', 'message' => 'Không tìm thấy vị trí trong bảng location.']);
+        exit;
+    }
+
+    $location_pk = (int)$location_row['id'];
+    $query = "INSERT INTO wifi_data (location_pk, location_id, cell_id, check_time, min_speed, max_speed) 
+              VALUES ($location_pk, '$location_id', $cell_id, '$check_time', $min_speed, $max_speed)";
 
     if (mysqli_query($conn, $query)) {
         echo json_encode(['status' => 'success', 'message' => 'Đã lưu dữ liệu thành công']);

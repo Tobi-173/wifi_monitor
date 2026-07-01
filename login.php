@@ -12,10 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = mysqli_real_escape_string($conn, $_POST['username']);
     $password = $_POST['password'];
 
-    $result = mysqli_query($conn, "SELECT * FROM users WHERE username = '$username'");
+    $result = mysqli_query($conn, "SELECT * FROM user WHERE username = '$username'");
     if ($result && $user = mysqli_fetch_assoc($result)) {
-        // Nếu không dùng hash password, so sánh trực tiếp với giá trị trong DB.
-        if ($password === $user['password']) {
+        if ($user['password'] === $password || password_verify($password, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['full_name'] = $user['full_name'];
@@ -65,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             <button type="submit" class="btn-login">Đăng nhập</button>
         </form>
-        <p class="hint">Mẫu tài khoản: admin / manager1 / staff1. Mật khẩu mặc định: <strong>password</strong>.</p>
+        <p class="hint">Mẫu tài khoản: admin / user1 / user2. Mật khẩu mặc định: <strong>password</strong>.</p>
     </div>
 </body>
 </html> 
